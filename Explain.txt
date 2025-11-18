@@ -1,0 +1,99 @@
+Project Summary (Very Brief)
+
+This repo builds an NBA against-the-spread (ATS) prediction pipeline using odds + NBA stats and trains baseline models on engineered features.
+
+⸻
+
+What it does
+
+1. Pulls NBA stats via nba_api
+
+enrich_with_nba_api.py:
+	•	Loads the raw odds file (date, home, away, spread)
+	•	Converts team names to NBA abbreviations
+	•	Uses nba_api to pull:
+	•	game logs
+	•	scores
+	•	basic box score stats
+	•	Matches each odds row to an NBA GAME_ID
+	•	Writes enriched file:
+data/processed/nba_2018-2025_with_stats.xlsx
+
+⸻
+
+2. Builds a clean ATS dataset
+
+build_dataset.py:
+	•	Reads the enriched stats + odds file
+	•	Computes:
+	•	spread_home (signed)
+	•	home_margin
+	•	covered_home (ATS outcome)
+	•	Removes pushes, missing games
+→ data/processed/nba_ats_clean.csv
+
+⸻
+
+3. Adds all team features (leakage-safe)
+
+features.py + build_features.py:
+	•	Season win% before game
+	•	Recent form (last 3 games)
+	•	Rest days
+	•	5-game rolling box-score stats:
+	•	points for / against
+	•	margin
+	•	Delta features (home − away for all metrics)
+	•	Saves:
+→ data/processed/nba_ats_features_winpct.csv
+
+⸻
+
+4. Creates balanced train/val/test splits
+
+split_balanced.py:
+	•	Splits dataset into train / val / test
+	•	Attempts to balance:
+	•	seasons
+	•	day of week
+→ data/processed/nba_ats_features_balanced_splits.csv
+
+⸻
+
+5. Trains logistic regression models
+
+Baseline model
+
+train_winpct_baseline.py:
+	•	Uses only win% features
+	•	Prints accuracy, log loss, AUC (train/val/test)
+
+Full feature model
+
+train_full_features.py:
+	•	Uses everything: win%, recent form, rest, box score, deltas
+	•	Prints metrics for train/val/test
+
+⸻
+
+Key Files
+	•	enrich_with_nba_api.py — pulls NBA data & attaches to odds
+	•	build_dataset.py — creates ATS labels
+	•	features.py — all feature engineering
+	•	build_features.py — applies feature engineering pipeline
+	•	split_balanced.py — train/val/test split generation
+	•	train_winpct_baseline.py — baseline logistic regression
+	•	train_full_features.py — full-feature logistic regression
+
+
+
+HOW TO RUN
+
+python3 src/enrich_with_nba_api.py
+python3 src/build_dataset.py
+python3 src/build_features.py
+python3 src/split_balanced.py
+python3 src/train_winpct_baseline.py
+python3 src/train_full_features.py
+
+
