@@ -1,14 +1,32 @@
 # src/train_lgbm_full_features.py
+"""
+LightGBM classifier using the full engineered feature set.
+
+Runs twice:
+  1) On balanced splits   -> nba_ats_features_balanced_splits.csv
+  2) On time-based splits -> nba_ats_features_time_splits.csv
+
+Saves models to:
+  models/lgbm_full_balanced.joblib
+  models/lgbm_full_time.joblib
+
+Saves feature importances to:
+  data/processed/lgbm_feature_importances_balanced.csv
+  data/processed/lgbm_feature_importances_time.csv
+"""
 
 import os
 import numpy as np
 import pandas as pd
 import lightgbm as lgb
 from sklearn.metrics import accuracy_score, roc_auc_score, log_loss
+from joblib import dump
 
-INPUT_PATH = "data/processed/nba_ats_features_balanced_splits.csv"
+BALANCED_PATH = "data/processed/nba_ats_features_balanced_splits.csv"
+TIME_PATH = "data/processed/nba_ats_features_time_splits.csv"
+
+MODEL_DIR = "models"
 OUTPUT_DIR = "data/processed"
-FI_OUTPUT_PATH = os.path.join(OUTPUT_DIR, "lgbm_feature_importances.csv")
 
 
 def evaluate_split(name: str, y_true, y_proba):
@@ -30,11 +48,15 @@ def evaluate_split(name: str, y_true, y_proba):
     print(f"AUC:      {auc:.4f}")
 
 
-def main():
-    print("Loading data from:", INPUT_PATH)
-    df = pd.read_csv(INPUT_PATH)
+def run_lgbm(input_path: str, model_path: str, fi_path: str, label: str):
+    print("\n" + "=" * 70)
+    print(f"Running LightGBM on {label} splits")
+    print("=" * 70)
+    print("Loading data from:", input_path)
 
-    # All possible features we might use; we'll keep only those that actually exist in df
+    df = pd.read_csv(input_path)
+
+    # All possible features we might use; keep only ones that exist
     possible_feature_cols = [
         "team_win_pct_before_game",
         "opp_win_pct_before_game",
@@ -92,7 +114,7 @@ def main():
     mask_good = df[feature_cols + ["covered_home"]].notna().all(axis=1)
     df = df[mask_good].copy()
 
-    # Split into train / val / test
+    # Split
     train_df = df[df["split"] == "train"]
     val_df = df[df["split"] == "val"]
     test_df = df[df["split"] == "test"]
@@ -123,7 +145,7 @@ def main():
         n_jobs=-1,
     )
 
-    print("\nTraining LightGBM on full feature set with early stopping...")
+    print("\nTraining LightGBM with early stopping...")
     model.fit(
         X_train,
         y_train,
@@ -146,8 +168,13 @@ def main():
     evaluate_split("val", y_val, y_val_proba)
     evaluate_split("test", y_test, y_test_proba)
 
+    # Save model
+    os.makedirs(MODEL_DIR, exist_ok=True)
+    dump(model, model_path)
+    print(f"\nSaved LightGBM model to: {model_path}")
+
     # Save feature importances
-    print("\nSaving feature importances to:", FI_OUTPUT_PATH)
+    print("Saving feature importances to:", fi_path)
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     fi = pd.DataFrame(
         {
@@ -157,9 +184,23 @@ def main():
         }
     )
     fi.sort_values("importance_gain", ascending=False, inplace=True)
-    fi.to_csv(FI_OUTPUT_PATH, index=False)
+    fi.to_csv(fi_path, index=False)
 
-    print("Done.")
+
+def main():
+    run_lgbm(
+        BALANCED_PATH,
+        os.path.join(MODEL_DIR, "lgbm_full_balanced.joblib"),
+        os.path.join(OUTPUT_DIR, "lgbm_feature_importances_balanced.csv"),
+        "BALANCED",
+    )
+
+    run_lgbm(
+        TIME_PATH,
+        os.path.join(MODEL_DIR, "lgbm_full_time.joblib"),
+        os.path.join(OUTPUT_DIR, "lgbm_feature_importances_time.csv"),
+        "TIME-BASED",
+    )
 
 
 if __name__ == "__main__":
