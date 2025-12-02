@@ -97,3 +97,12 @@ python3 src/train_winpct_baseline.py
 python3 src/train_full_features.py
 
 
+TO RUN DASHBOARD:
+ Start the Flask server:
+   python app.py
+
+Open your web browser and go to:
+   http://localhost:5000
+
+Click the "Refresh Results" button to run the complete pipeline
+
