@@ -96,4 +96,33 @@ python3 src/split_balanced.py
 python3 src/train_winpct_baseline.py
 python3 src/train_full_features.py
 
+⸻
+
+VIEW RESULTS DASHBOARD
+
+1. Generate results file:
+   python3 src/generate_results.py
+
+2. Start the dashboard server:
+   python3 serve_dashboard.py
+   
+   This will:
+   •	Start a local server on port 8000
+   •	Automatically open dashboard.html in your browser
+   •	Display all pipeline results and statistics
+
+   Press Ctrl+C to stop the server when done.
+
+Alternative (if server doesn't work):
+   Open dashboard.html directly, but you may need to:
+   •	Use a browser extension to allow local file access, OR
+   •	Copy results.json data and paste into browser console
+
+The dashboard shows:
+•	Pipeline execution status
+•	Dataset statistics (total games, coverage rates)
+•	Train/Val/Test split information
+•	Feature engineering details
+•	Model performance metrics (after training)
+
 

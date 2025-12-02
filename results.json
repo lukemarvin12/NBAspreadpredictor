@@ -1,0 +1,79 @@
+{
+  "pipeline_status": {
+    "enriched_data": {
+      "exists": true,
+      "path": "C:\\Users\\ajlag\\Documents\\CSC2053\\NBAspreadpredictor\\data\\processed\\nba_2018-2025_with_stats.xlsx"
+    },
+    "clean_dataset": {
+      "exists": true,
+      "path": "C:\\Users\\ajlag\\Documents\\CSC2053\\NBAspreadpredictor\\data\\processed\\nba_ats_clean.csv"
+    },
+    "features": {
+      "exists": true,
+      "path": "C:\\Users\\ajlag\\Documents\\CSC2053\\NBAspreadpredictor\\data\\processed\\nba_ats_features_winpct.csv"
+    },
+    "splits": {
+      "exists": true,
+      "path": "C:\\Users\\ajlag\\Documents\\CSC2053\\NBAspreadpredictor\\data\\processed\\nba_ats_features_balanced_splits.csv"
+    }
+  },
+  "dataset_stats": {
+    "total_games": 9388,
+    "home_covered": 4633,
+    "home_covered_pct": 49.35023434171282,
+    "seasons": "N/A",
+    "train_count": 5608,
+    "train_covered_pct": 48.965763195435095,
+    "val_count": 1857,
+    "val_covered_pct": 50.080775444264944,
+    "test_count": 1923,
+    "test_covered_pct": 49.765990639625585
+  },
+  "baseline_metrics": {},
+  "full_model_metrics": {},
+  "feature_importance": {
+    "total_features": 40,
+    "feature_list": [
+      "season",
+      "date",
+      "regular",
+      "playoffs",
+      "home",
+      "away",
+      "home_pts",
+      "away_pts",
+      "home_win",
+      "ats_margin_home",
+      "covered_away",
+      "team",
+      "opponent",
+      "is_home",
+      "abs_spread",
+      "team_win",
+      "opp_win",
+      "team_win_pct_before_game",
+      "opp_win_pct_before_game",
+      "team_recent_win_pct_3",
+      "opp_recent_win_pct_3",
+      "team_rest",
+      "opp_rest",
+      "team_pts_for",
+      "team_pts_against",
+      "team_margin",
+      "opp_pts_for",
+      "opp_pts_against",
+      "opp_margin",
+      "team_pts_for_5",
+      "team_pts_against_5",
+      "team_margin_5",
+      "opp_pts_for_5",
+      "opp_pts_against_5",
+      "opp_margin_5",
+      "delta_win_pct",
+      "delta_recent_win_pct_3",
+      "delta_rest",
+      "delta_pts_for_5",
+      "delta_margin_5"
+    ]
+  }
+}
