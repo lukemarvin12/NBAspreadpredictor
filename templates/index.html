@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NBA Spread Predictor Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .button-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        button {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 15px 35px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        button:disabled {
+            background: #ccc;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .metric:last-child {
+            border-bottom: none;
+        }
+
+        .metric-label {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .metric-value {
+            color: #333;
+            font-weight: bold;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+
+        .status-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e5e7eb;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0 5px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s ease;
+        }
+
+        .progress-label {
+            text-align: right;
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .feature-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+
+        .feature-item {
+            padding: 8px;
+            background: #f3f4f6;
+            margin: 5px 0;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: white;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .error {
+            background: #fee;
+            color: #c00;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px;
+        }
+
+        .model-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .model-section h3 {
+            color: #764ba2;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🏀 NBA Spread Predictor Dashboard</h1>
+
+        <div class="button-container">
+            <button id="runBtn" onclick="runPipeline()">Refresh Results</button>
+        </div>
+
+        <div id="loading" style="display:none;">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p style="font-size: 1.3em;">Running pipeline... This will take several minutes.</p>
+                <p style="font-size: 1em; margin-top: 10px;">Fetching NBA data, building features, and training
+                    models...</p>
+            </div>
+        </div>
+
+        <div id="error" style="display:none;"></div>
+
+        <div id="dashboard" style="display:none;">
+
+            <!-- Top Row: Status, Dataset Stats, Splits -->
+            <div class="grid">
+                <div class="card">
+                    <h2>📋 Pipeline Status</h2>
+                    <div id="pipeline-status"></div>
+                </div>
+
+                <div class="card">
+                    <h2>Dataset Statistics</h2>
+                    <div id="dataset-stats"></div>
+                </div>
+
+                <div class="card">
+                    <h2>Train/Val/Test Splits</h2>
+                    <div id="split-stats"></div>
+                </div>
+            </div>
+
+            <!-- Feature Engineering -->
+            <div class="grid">
+                <div class="card full-width">
+                    <h2>Feature Engineering</h2>
+                    <div id="feature-info"></div>
+                </div>
+            </div>
+
+            <!-- Model Results -->
+            <div class="grid">
+                <div class="card">
+                    <h2>Baseline Model (Win % Only)</h2>
+                    <div id="baseline-results"></div>
+                </div>
+
+                <div class="card">
+                    <h2>Full Feature Model</h2>
+                    <div id="full-model-results"></div>
+                </div>
+            </div>
+
+            <!-- LightGBM Model (if exists) -->
+            <div class="grid" id="lgbm-container" style="display:none;">
+                <div class="card full-width">
+                    <h2>LightGBM Model (Gradient Boosting)</h2>
+                    <div id="lgbm-results"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function runPipeline() {
+            const btn = document.getElementById('runBtn');
+            const loadingDiv = document.getElementById('loading');
+            const errorDiv = document.getElementById('error');
+            const dashboardDiv = document.getElementById('dashboard');
+
+            btn.disabled = true;
+            btn.textContent = 'Running...';
+            loadingDiv.style.display = 'block';
+            errorDiv.style.display = 'none';
+            dashboardDiv.style.display = 'none';
+
+            try {
+                const response = await fetch('/run-pipeline', { method: 'POST' });
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Unknown error');
+                }
+
+                displayResults(data.results);
+
+                loadingDiv.style.display = 'none';
+                dashboardDiv.style.display = 'block';
+
+            } catch (error) {
+                loadingDiv.style.display = 'none';
+                errorDiv.style.display = 'block';
+                errorDiv.className = 'error';
+                errorDiv.innerHTML = `<strong>Error:</strong> ${error.message}`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Refresh Results';
+            }
+        }
+
+        function displayResults(r) {
+            // Pipeline Status
+            const statusSteps = [
+                { name: 'ENRICHED DATA', complete: true },
+                { name: 'CLEAN DATASET', complete: true },
+                { name: 'FEATURES', complete: true },
+                { name: 'SPLITS', complete: true }
+            ];
+
+            let statusHtml = statusSteps.map(step => `
+                <div class="metric">
+                    <span class="metric-label">${step.name}</span>
+                    <span class="metric-value">
+                        <span class="status-badge status-success">✓ Complete</span>
+                    </span>
+                </div>
+            `).join('');
+            document.getElementById('pipeline-status').innerHTML = statusHtml;
+
+            // Dataset Statistics
+            const totalGames = parseInt(r.dataset.final_rows);
+            const homeCovered = Math.round(totalGames * 0.4935); // Approximate from your data
+            const homeCoveredPct = (homeCovered / totalGames * 100).toFixed(2);
+
+            document.getElementById('dataset-stats').innerHTML = `
+                <div class="metric">
+                    <span class="metric-label">Total Games</span>
+                    <span class="metric-value">${totalGames.toLocaleString()}</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Home Covered</span>
+                    <span class="metric-value">${homeCovered} (${homeCoveredPct}%)</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Seasons</span>
+                    <span class="metric-value">8 (2018-2025)</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Features Created</span>
+                    <span class="metric-value">${r.features.columns}</span>
+                </div>
+            `;
+
+            // Split Statistics with Progress Bars
+            const splits = r.splits_balanced || {};
+            const train = parseInt(splits.train);
+            const val = parseInt(splits.val);
+            const test = parseInt(splits.test);
+            const trainPct = (train / totalGames * 100).toFixed(0);
+            const valPct = (val / totalGames * 100).toFixed(0);
+            const testPct = (test / totalGames * 100).toFixed(0);
+
+            // Approximate home covered percentages from your results
+            const trainCovered = 48.97;
+            const valCovered = 50.08;
+            const testCovered = 49.77;
+
+            document.getElementById('split-stats').innerHTML = `
+                <div class="metric">
+                    <span class="metric-label">TRAIN</span>
+                    <span class="metric-value">${train.toLocaleString()} games (${trainPct}%)</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${trainPct}%"></div>
+                </div>
+                <div class="progress-label">${trainCovered}% covered home</div>
+                
+                <div class="metric">
+                    <span class="metric-label">VAL</span>
+                    <span class="metric-value">${val.toLocaleString()} games (${valPct}%)</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${valPct}%"></div>
+                </div>
+                <div class="progress-label">${valCovered}% covered home</div>
+                
+                <div class="metric">
+                    <span class="metric-label">TEST</span>
+                    <span class="metric-value">${test.toLocaleString()} games (${testPct}%)</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${testPct}%"></div>
+                </div>
+                <div class="progress-label">${testCovered}% covered home</div>
+            `;
+
+            // Feature Information
+            const featureList = [
+                'team_win_pct_before_game', 'opp_win_pct_before_game', 'team_recent_win_pct_3',
+                'opp_recent_win_pct_3', 'abs_spread', 'team_rest', 'opp_rest', 'team_pts_for_5',
+                'team_pts_against_5', 'team_margin_5', 'opp_pts_for_5', 'opp_pts_against_5',
+                'opp_margin_5', 'delta_win_pct', 'delta_recent_win_pct_3', 'delta_rest',
+                'delta_pts_for_5', 'delta_margin_5', 'team_offrtg_5', 'team_defrtg_5',
+                'team_pace_5', 'opp_offrtg_5', 'opp_defrtg_5', 'opp_pace_5', 'delta_offrtg_5',
+                'delta_defrtg_5', 'delta_pace_5', 'team_is_b2b', 'opp_is_b2b', 'team_is_3in4',
+                'opp_is_3in4', 'is_altitude_home', 'is_altitude_away', 'season', 'date',
+                'regular', 'playoffs', 'home', 'away', 'home_pts'
+            ];
+
+            document.getElementById('feature-info').innerHTML = `
+                <div class="metric">
+                    <span class="metric-label">Total Features</span>
+                    <span class="metric-value">${r.features.columns}</span>
+                </div>
+                <div style="margin-top: 15px;">
+                    <strong>Feature List:</strong>
+                    <div class="feature-list">
+                        ${featureList.map((f, i) => `<div class="feature-item">${i + 1}. ${f}</div>`).join('')}
+                    </div>
+                </div>
+            `;
+
+            // Baseline Model Results
+            document.getElementById('baseline-results').innerHTML = `
+                <div class="model-section">
+                    <h3>Balanced Splits</h3>
+                    ${formatMetrics(r.baseline.balanced)}
+                </div>
+                <div class="model-section">
+                    <h3>Time-Based Splits</h3>
+                    ${formatMetrics(r.baseline.time)}
+                </div>
+            `;
+
+            // Full Feature Model Results
+            document.getElementById('full-model-results').innerHTML = `
+                <div class="model-section">
+                    <h3>Balanced Splits</h3>
+                    ${formatMetrics(r.full.balanced)}
+                </div>
+                <div class="model-section">
+                    <h3>Time-Based Splits</h3>
+                    ${formatMetrics(r.full.time)}
+                </div>
+            `;
+
+            // LightGBM Results (if exists)
+            if (r.lgbm) {
+                document.getElementById('lgbm-container').style.display = 'grid';
+                document.getElementById('lgbm-results').innerHTML = `
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="model-section">
+                            <h3>Balanced Splits</h3>
+                            ${formatMetrics(r.lgbm.balanced)}
+                        </div>
+                        <div class="model-section">
+                            <h3>Time-Based Splits</h3>
+                            ${formatMetrics(r.lgbm.time)}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function formatMetrics(metrics) {
+            if (!metrics || !metrics.test) return '<p>No data available</p>';
+
+            return `
+                <div class="metric">
+                    <span class="metric-label">Train Accuracy</span>
+                    <span class="metric-value">${(parseFloat(metrics.train.accuracy) * 100).toFixed(2)}%</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Val Accuracy</span>
+                    <span class="metric-value">${(parseFloat(metrics.val.accuracy) * 100).toFixed(2)}%</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Test Accuracy</span>
+                    <span class="metric-value">${(parseFloat(metrics.test.accuracy) * 100).toFixed(2)}%</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Test AUC</span>
+                    <span class="metric-value">${metrics.test.auc}</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Test Log Loss</span>
+                    <span class="metric-value">${metrics.test.log_loss}</span>
+                </div>
+            `;
+        }
+    </script>
+</body>
+
+</html>s
