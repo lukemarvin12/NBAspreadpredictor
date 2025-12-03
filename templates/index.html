@@ -1,3 +1,5 @@
+<!-- index.html is our frontend dashboard that we built in pure html, CSS, and JSS. I also did vegas knights colors because gambling! -->
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -13,8 +15,8 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: Georgia, serif;
+            background: linear-gradient(135deg, #e4ba11 0%, #000000 100%);
             padding: 20px;
             min-height: 100vh;
         }
@@ -39,7 +41,7 @@
 
         button {
             background: white;
-            color: #667eea;
+            color: #cc2c36;
             border: none;
             padding: 15px 35px;
             border-radius: 8px;
@@ -82,10 +84,10 @@
         }
 
         .card h2 {
-            color: #667eea;
+            color: #cc2c36;
             margin-bottom: 20px;
             font-size: 1.4em;
-            border-bottom: 3px solid #667eea;
+            border-bottom: 3px solid #cc2c36;
             padding-bottom: 10px;
         }
 
@@ -134,7 +136,7 @@
 
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #667eea, #764ba2);
+            background: linear-gradient(90deg, #cc2c36, #cc2c36);
             transition: width 0.3s ease;
         }
 
@@ -201,7 +203,7 @@
         }
 
         .model-section h3 {
-            color: #764ba2;
+            color: #cc2c36;
             font-size: 1.1em;
             margin-bottom: 10px;
         }
@@ -233,10 +235,9 @@
 
         <div id="dashboard" style="display:none;">
 
-            <!-- Top Row: Status, Dataset Stats, Splits -->
             <div class="grid">
                 <div class="card">
-                    <h2>📋 Pipeline Status</h2>
+                    <h2>Pipeline Status</h2>
                     <div id="pipeline-status"></div>
                 </div>
 
@@ -251,7 +252,6 @@
                 </div>
             </div>
 
-            <!-- Feature Engineering -->
             <div class="grid">
                 <div class="card full-width">
                     <h2>Feature Engineering</h2>
@@ -259,7 +259,6 @@
                 </div>
             </div>
 
-            <!-- Model Results -->
             <div class="grid">
                 <div class="card">
                     <h2>Baseline Model (Win % Only)</h2>
@@ -272,7 +271,6 @@
                 </div>
             </div>
 
-            <!-- LightGBM Model (if exists) -->
             <div class="grid" id="lgbm-container" style="display:none;">
                 <div class="card full-width">
                     <h2>LightGBM Model (Gradient Boosting)</h2>
@@ -320,7 +318,6 @@
         }
 
         function displayResults(r) {
-            // Pipeline Status
             const statusSteps = [
                 { name: 'ENRICHED DATA', complete: true },
                 { name: 'CLEAN DATASET', complete: true },
@@ -338,9 +335,8 @@
             `).join('');
             document.getElementById('pipeline-status').innerHTML = statusHtml;
 
-            // Dataset Statistics
             const totalGames = parseInt(r.dataset.final_rows);
-            const homeCovered = Math.round(totalGames * 0.4935); // Approximate from your data
+            const homeCovered = Math.round(totalGames * 0.4935); 
             const homeCoveredPct = (homeCovered / totalGames * 100).toFixed(2);
 
             document.getElementById('dataset-stats').innerHTML = `
@@ -357,12 +353,11 @@
                     <span class="metric-value">8 (2018-2025)</span>
                 </div>
                 <div class="metric">
-                    <span class="metric-label">Features Created</span>
+                    <span class="metric-label">Nonpredictive AND Predictive Features Created</span>
                     <span class="metric-value">${r.features.columns}</span>
                 </div>
             `;
 
-            // Split Statistics with Progress Bars
             const splits = r.splits_balanced || {};
             const train = parseInt(splits.train);
             const val = parseInt(splits.val);
@@ -371,7 +366,6 @@
             const valPct = (val / totalGames * 100).toFixed(0);
             const testPct = (test / totalGames * 100).toFixed(0);
 
-            // Approximate home covered percentages from your results
             const trainCovered = 48.97;
             const valCovered = 50.08;
             const testCovered = 49.77;
@@ -405,7 +399,6 @@
                 <div class="progress-label">${testCovered}% covered home</div>
             `;
 
-            // Feature Information
             const featureList = [
                 'team_win_pct_before_game', 'opp_win_pct_before_game', 'team_recent_win_pct_3',
                 'opp_recent_win_pct_3', 'abs_spread', 'team_rest', 'opp_rest', 'team_pts_for_5',
@@ -420,8 +413,8 @@
 
             document.getElementById('feature-info').innerHTML = `
                 <div class="metric">
-                    <span class="metric-label">Total Features</span>
-                    <span class="metric-value">${r.features.columns}</span>
+                    <span class="metric-label">Total Predictive Features</span>
+                    <span class="metric-value">40</span>
                 </div>
                 <div style="margin-top: 15px;">
                     <strong>Feature List:</strong>
@@ -431,7 +424,6 @@
                 </div>
             `;
 
-            // Baseline Model Results
             document.getElementById('baseline-results').innerHTML = `
                 <div class="model-section">
                     <h3>Balanced Splits</h3>
@@ -443,7 +435,6 @@
                 </div>
             `;
 
-            // Full Feature Model Results
             document.getElementById('full-model-results').innerHTML = `
                 <div class="model-section">
                     <h3>Balanced Splits</h3>
@@ -455,7 +446,6 @@
                 </div>
             `;
 
-            // LightGBM Results (if exists)
             if (r.lgbm) {
                 document.getElementById('lgbm-container').style.display = 'grid';
                 document.getElementById('lgbm-results').innerHTML = `
@@ -502,4 +492,4 @@
     </script>
 </body>
 
-</html>s
+</html>

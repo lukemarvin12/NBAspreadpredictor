@@ -1,3 +1,5 @@
+# app.py is a Flask web application that acts as the bridge between our user interface and the data processing/training pipeline in /src. It provides an endpoint to trigger the entire pipeline and returns the results in a structured format.
+
 from flask import Flask, render_template, jsonify
 import subprocess
 import pandas as pd
@@ -14,7 +16,7 @@ def parse_metrics(output):
     """Extract metrics from training output"""
     metrics = {}
     
-    # Extract train metrics
+    #This simply parses and reads what our script outputs, I saw another github repo do this method so I adopted it with train_match, val_match, and test_match
     train_match = re.search(r'=== TRAIN METRICS ===\s+Rows:\s+(\d+)\s+Accuracy:\s+([\d.]+)\s+Log loss:\s+([\d.]+)\s+AUC:\s+([\d.]+)', output)
     if train_match:
         metrics['train'] = {
@@ -24,7 +26,6 @@ def parse_metrics(output):
             'auc': train_match.group(4)
         }
     
-    # Extract val metrics
     val_match = re.search(r'=== VAL METRICS ===\s+Rows:\s+(\d+)\s+Accuracy:\s+([\d.]+)\s+Log loss:\s+([\d.]+)\s+AUC:\s+([\d.]+)', output)
     if val_match:
         metrics['val'] = {
@@ -34,7 +35,6 @@ def parse_metrics(output):
             'auc': val_match.group(4)
         }
     
-    # Extract test metrics
     test_match = re.search(r'=== TEST METRICS ===\s+Rows:\s+(\d+)\s+Accuracy:\s+([\d.]+)\s+Log loss:\s+([\d.]+)\s+AUC:\s+([\d.]+)', output)
     if test_match:
         metrics['test'] = {
@@ -51,13 +51,11 @@ def run_pipeline():
     try:
         results = {}
         
-        # Step 1: Enrich with NBA API
         result = subprocess.run('python src/enrich_with_nba_api.py', 
                               shell=True, capture_output=True, text=True)
         if result.returncode != 0:
             return jsonify({'error': 'Failed at enrich_with_nba_api.py', 'details': result.stderr}), 500
         
-        # Extract season info
         seasons_match = re.search(r'Seasons found in odds file: \[(.*?)\]', result.stdout)
         rows_match = re.search(r'Rows in merged dataframe: (\d+)', result.stdout)
         warning_match = re.search(r'WARNING: (\d+) rows have no matching', result.stdout)
@@ -68,7 +66,6 @@ def run_pipeline():
             'unmatched_rows': warning_match.group(1) if warning_match else '0'
         }
         
-        # Step 2: Build dataset
         result = subprocess.run('python src/build_dataset.py', 
                               shell=True, capture_output=True, text=True)
         if result.returncode != 0:
@@ -82,7 +79,6 @@ def run_pipeline():
             'final_rows': final_rows_match.group(1) if final_rows_match else 'N/A'
         }
         
-        # Step 3: Build features
         result = subprocess.run('python src/build_features.py', 
                               shell=True, capture_output=True, text=True)
         if result.returncode != 0:
@@ -95,7 +91,6 @@ def run_pipeline():
             'columns': features_match.group(2) if features_match else 'N/A'
         }
         
-        # Step 4: Split balanced
         result = subprocess.run('python src/split_balanced.py', 
                               shell=True, capture_output=True, text=True)
         if result.returncode != 0:
@@ -111,7 +106,6 @@ def run_pipeline():
             'test': test_split_match.group(1) if test_split_match else 'N/A'
         }
         
-        # Step 5: Split time-based (if exists)
         time_split_exists = os.path.exists('src/split_time_based.py')
         if time_split_exists:
             result = subprocess.run('python src/split_time_based.py', 
@@ -129,13 +123,11 @@ def run_pipeline():
                 'test': test_split_match.group(1) if test_split_match else 'N/A'
             }
         
-        # Step 6: Train baseline
         baseline_result = subprocess.run('python src/train_winpct_baseline.py', 
                                         shell=True, capture_output=True, text=True)
         if baseline_result.returncode != 0:
             return jsonify({'error': 'Failed at train_winpct_baseline.py', 'details': baseline_result.stderr}), 500
         
-        # Parse balanced and time-based metrics
         output_parts = baseline_result.stdout.split('Running win% baseline on TIME-BASED splits')
         baseline_balanced = parse_metrics(output_parts[0])
         baseline_time = parse_metrics(output_parts[1]) if len(output_parts) > 1 else {}
@@ -145,13 +137,11 @@ def run_pipeline():
             'time': baseline_time
         }
         
-        # Step 7: Train full features
         full_result = subprocess.run('python src/train_full_features.py', 
                                     shell=True, capture_output=True, text=True)
         if full_result.returncode != 0:
             return jsonify({'error': 'Failed at train_full_features.py', 'details': full_result.stderr}), 500
         
-        # Parse balanced and time-based metrics
         output_parts = full_result.stdout.split('Running full-feature logistic regression on TIME-BASED splits')
         full_balanced = parse_metrics(output_parts[0])
         full_time = parse_metrics(output_parts[1]) if len(output_parts) > 1 else {}
@@ -161,13 +151,12 @@ def run_pipeline():
             'time': full_time
         }
         
-        # Step 8: Train LGBM (if exists)
         lgbm_exists = os.path.exists('src/train_lgbm_full_features.py')
         if lgbm_exists:
             lgbm_result = subprocess.run('python src/train_lgbm_full_features.py', 
                                         shell=True, capture_output=True, text=True)
             if lgbm_result.returncode == 0:
-                # Parse LGBM metrics
+            
                 output_parts = lgbm_result.stdout.split('TIME-BASED')
                 lgbm_balanced = parse_metrics(output_parts[0])
                 lgbm_time = parse_metrics(output_parts[1]) if len(output_parts) > 1 else {}
